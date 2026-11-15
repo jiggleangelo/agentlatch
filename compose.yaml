@@ -1,0 +1,46 @@
+{
+  "services": {
+    "demo": {
+      "build": ".",
+      "environment": {
+        "HOST": "0.0.0.0",
+        "PORT": "8080",
+        "AGENTGATE_TLS": "1"
+      },
+      "networks": ["backend"],
+      "read_only": true,
+      "tmpfs": ["/tmp:size=32m,mode=1777"],
+      "cap_drop": ["ALL"],
+      "security_opt": ["no-new-privileges:true"],
+      "pids_limit": 128
+    },
+    "edge": {
+      "image": "nginx:stable-alpine",
+      "depends_on": ["demo"],
+      "ports": ["443:443"],
+      "networks": ["backend", "edge"],
+      "volumes": [
+        {
+          "type": "bind",
+          "source": "./deploy/nginx.conf",
+          "target": "/etc/nginx/nginx.conf",
+          "read_only": true
+        },
+        {
+          "type": "bind",
+          "source": "${AGENTGATE_CERT_DIR:?Set AGENTGATE_CERT_DIR to the TLS certificate directory}",
+          "target": "/etc/nginx/tls",
+          "read_only": true
+        }
+      ],
+      "read_only": true,
+      "tmpfs": ["/var/cache/nginx:size=32m", "/var/run:size=1m", "/tmp:size=8m"],
+      "security_opt": ["no-new-privileges:true"],
+      "pids_limit": 64
+    }
+  },
+  "networks": {
+    "backend": {"internal": true},
+    "edge": {}
+  }
+}
